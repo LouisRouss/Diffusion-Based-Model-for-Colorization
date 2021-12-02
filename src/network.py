@@ -1,4 +1,5 @@
 import os
+from abc import abstractmethod
 
 import torch
 import torch.nn as nn
@@ -325,7 +326,7 @@ class AttentionBlock(nn.Module):
             # split heads before split qkv
             self.attention = QKVAttentionLegacy(self.num_heads)
 
-        self.proj_out = zero_module(conv_nd(1, channels, channels, 1))
+        self.proj_out = zero_module(nn.Conv1d(channels, channels, 1))
 
     def forward(self, x):
         return checkpoint(self._forward, (x,), self.parameters(), True)
@@ -625,7 +626,7 @@ class UNetModel(nn.Module):
         self.out = nn.Sequential(
             normalization(ch),
             nn.SiLU(),
-            zero_module(nn.Cond2d(input_ch, out_channels, 3, padding=1)),
+            zero_module(nn.Conv2d(input_ch, out_channels, 3, padding=1)),
         )
 
     def convert_to_fp16(self):

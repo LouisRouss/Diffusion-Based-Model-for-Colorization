@@ -1,6 +1,6 @@
 import os
 
-from .src.trainer import Trainer
+from .trainer import Trainer
 
 def train(config):
     trainer = Trainer(config)

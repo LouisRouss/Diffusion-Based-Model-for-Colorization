@@ -2,14 +2,14 @@ import os
 
 from .network import UNetModel,EMA
 from .dataloader import gray_color_data
-from diffusion import GaussianDiffusion,extract
+from .diffusion import GaussianDiffusion,extract
 
 import torch
 import torch.optim as optim
-import torch.nn
+import torch.nn as nn
 
 #from torch.utils.tensorboard import SummaryWriter
-from torch.utils.data import Dataloader
+from torch.utils.data import DataLoader
 
 import numpy as np
 import tqdm
@@ -45,7 +45,7 @@ class Trainer(nn.Module):
         self.path_train_grey = os.path.join(config.PATH_GREY,'train.npy')
         self.path_validation_color = os.path.join(config.PATH_COLOR,'validation.npy')
         self.path_validation_grey = os.path.join(config.PATH_GREY,'validation.npy')
-        dataset_train = gray_color_data(self.path_train_color,self.path_train_grey)  ## Refaire pour renvoyer du rgb
+        dataset_train = gray_color_data(self.path_train_color,self.path_train_grey)  
         dataset_validation = gray_color_data(self.path_validation_color,self.path_validation_grey)
         self.batch_size = config.BATCH_SIZE
         self.dataloader_train = Dataloader(dataset_train,batch_size=self.batch_size, shuffle=True)
