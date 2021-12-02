@@ -8,10 +8,12 @@ import torch
 import torch.optim as optim
 import torch.nn
 
-from torch.utils.tensorboard import SummaryWriter
+#from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import Dataloader
 
 import numpy as np
+import tqdm
+import copy
 
 class Trainer(nn.Module):
     def __init__(self,config):
@@ -62,41 +64,49 @@ class Trainer(nn.Module):
         self.ema_every = config.EMA_EVERY
         self.start_ema = config.START_EMA
         self.save_model_every = config.SAVE_MODEL_EVERY
+        self.ema_model = copy.deepcopy(self.network).to(self.device)
 
         def save_model(self,name):
             torch.save(self.network.state_dict(),f'models/{name}')
 
         def train(self):
 
-                writer = SummaryWriter(log_dir='results/') 
                 optimizer = optim.Adam(self.network.parameters(),lr=self.LR)
                 iteration = 0
 
+                print('Starting Training')
+
                 while iteration < self.iteration_max:
                     
+                    tq = tqdm(self.dataloader_train)
+                    tq.set_description(f'Iteration {iteration} / {iteration_max}')
                     self.network.train()
                     optimizer.zero_grad()
-                    grey,color = next(self.dataloader_train).to(self.device)
+                    grey,color = next(tq).to(self.device)
                     t = torch.randint(0, self.num_timesteps, (self.batch_size,), device=device).long()
                     noisy_image,noise_ref = self.diffusion.noisy_image(t,color)
                     noise_pred = self.diffusion.noise_prediction(self.network,noisy_image,grey,t)
                     loss = self.loss(noise_ref,denoised_image)
                     loss.backward()
                     optimizer.step()
+                    tq.set_postfix(loss = loss.item()*self.batch_size)
                     iteration+=1
 
-                    writer.add_scalar('MSE/Train',loss.item() * self.batch_size,iteration)
-
                     if iteration%self.ema_every == 0 and iteration>self.start_ema:
-                        self.EMA.update_model_average(self.EMA,self.network)
+                        print('EMA update')
+                        self.EMA.update_model_average(self.ema_model,self.network)
                     
                     if iteration%self.save_model_every == 0:
+                        print('Saving models')
                         self.save_model(f'model_{iteration}.pth')
+                        self.save_model(f'model_ema_{iteration}.pth')
 
                     if iteration%self.validation_every == 0:
+                        tq = tqdm(dataloader_validation)
                         with torch.no_grad():
                             self.network.eval()
-                            for (gray,color) in self.dataloader_validation:
+                            for (gray,color) in enumerate(tq):
+                                tq.set_description(f'Iteration {iteration} / {iteration_max}')
                                 gray = gray.to(self.device)
                                 T = 1000
                                 alphas = np.linspace(1e-4,0.09,T)
@@ -108,7 +118,11 @@ class Trainer(nn.Module):
                                     else:
                                         z = torch.zeros_like(color).to(self.device)
                                     y = extract(to_torch(np.sqrt(1/alphas)),t,y.shape)*(y-(extract(to_torch((1-alphas)/np.sqrt(1-gammas)),t,y.shape))*self.network(y,gray,t)) + extract(np.sqrt(1-alphas),t,z.shape)*z
-                                loss = #check metrics for colorization
+                                    y_ema = extract(to_torch(np.sqrt(1/alphas)),t,y.shape)*(y-(extract(to_torch((1-alphas)/np.sqrt(1-gammas)),t,y.shape))*self.ema_model(y,gray,t)) + extract(np.sqrt(1-alphas),t,z.shape)*z
+                                loss = self.loss(color,y)
+                                loss_ema = self.loss(color,y_ema)
+                                tq.set_postfix(loss = loss.item())
+                    
 
             
 
