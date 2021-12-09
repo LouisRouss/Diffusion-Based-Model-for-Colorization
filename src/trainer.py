@@ -15,9 +15,8 @@ import numpy as np
 import tqdm
 import copy
 
-class Trainer(nn.Module):
+class Trainer():
     def __init__(self,config):
-        super().__init__()
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.diffusion = GaussianDiffusion(config.IMAGE_SIZE,config.CHANNEL_X,config.CHANNEL_Y,config.TIMESTEPS)
         in_channels = config.CHANNEL_X + config.CHANNEL_Y
@@ -48,8 +47,8 @@ class Trainer(nn.Module):
         dataset_train = gray_color_data(self.path_train_color,self.path_train_grey)  
         dataset_validation = gray_color_data(self.path_validation_color,self.path_validation_grey)
         self.batch_size = config.BATCH_SIZE
-        self.dataloader_train = Dataloader(dataset_train,batch_size=self.batch_size, shuffle=True)
-        self.dataloader_validation = Dataloader(dataset_validation,batch_size=1,shuffle=False)
+        self.dataloader_train = DataLoader(dataset_train,batch_size=self.batch_size, shuffle=True)
+        self.dataloader_validation = DataLoader(dataset_validation,batch_size=1,shuffle=False)
         self.iteration_max = config.ITERATION_MAX
         self.EMA = EMA(0.9999)
         self.LR = config.LR
@@ -66,8 +65,11 @@ class Trainer(nn.Module):
         self.save_model_every = config.SAVE_MODEL_EVERY
         self.ema_model = copy.deepcopy(self.network).to(self.device)
 
-        def save_model(self,name):
-            torch.save(self.network.state_dict(),f'models/{name}')
+        def save_model(self,name,EMA=False):
+            if not EMA:
+                torch.save(self.network.state_dict(),f'models/{name}')
+            else:
+                torch.save(self.ema_model.state_dict(),f'models/{name}')
 
         def train(self):
 
@@ -99,7 +101,7 @@ class Trainer(nn.Module):
                     if iteration%self.save_model_every == 0:
                         print('Saving models')
                         self.save_model(f'model_{iteration}.pth')
-                        self.save_model(f'model_ema_{iteration}.pth')
+                        self.save_model(f'model_ema_{iteration}.pth',EMA=True)
 
                     if iteration%self.validation_every == 0:
                         tq = tqdm(dataloader_validation)

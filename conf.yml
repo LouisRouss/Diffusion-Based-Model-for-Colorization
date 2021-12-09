@@ -18,7 +18,7 @@ USE_SCALE_SHIFT_NORM : 'False'
 RESBLOCK_UPDOWN : 'False'
 USE_NEW_ATTENTION_ORDER : 'False'
 PATH_COLOR : 'color'
-PATH_GREY : 'grey'
+PATH_GREY : 'grayscale'
 BATCH_SIZE : 8
 ITERATION_MAX : 1e6
 LR : 1e-4
