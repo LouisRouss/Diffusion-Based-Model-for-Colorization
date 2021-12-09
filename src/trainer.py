@@ -65,65 +65,65 @@ class Trainer():
         self.save_model_every = config.SAVE_MODEL_EVERY
         self.ema_model = copy.deepcopy(self.network).to(self.device)
 
-        def save_model(self,name,EMA=False):
-            if not EMA:
-                torch.save(self.network.state_dict(),f'models/{name}')
-            else:
-                torch.save(self.ema_model.state_dict(),f'models/{name}')
+    def save_model(self,name,EMA=False):
+        if not EMA:
+            torch.save(self.network.state_dict(),f'models/{name}')
+        else:
+            torch.save(self.ema_model.state_dict(),f'models/{name}')
 
-        def train(self):
+    def train(self):
 
-                optimizer = optim.Adam(self.network.parameters(),lr=self.LR)
-                iteration = 0
+            optimizer = optim.Adam(self.network.parameters(),lr=self.LR)
+            iteration = 0
 
-                print('Starting Training')
+            print('Starting Training')
 
-                while iteration < self.iteration_max:
-                    
-                    tq = tqdm(self.dataloader_train)
-                    tq.set_description(f'Iteration {iteration} / {iteration_max}')
-                    self.network.train()
-                    optimizer.zero_grad()
-                    grey,color = next(tq).to(self.device)
-                    t = torch.randint(0, self.num_timesteps, (self.batch_size,), device=device).long()
-                    noisy_image,noise_ref = self.diffusion.noisy_image(t,color)
-                    noise_pred = self.diffusion.noise_prediction(self.network,noisy_image,grey,t)
-                    loss = self.loss(noise_ref,denoised_image)
-                    loss.backward()
-                    optimizer.step()
-                    tq.set_postfix(loss = loss.item()*self.batch_size)
-                    iteration+=1
+            while iteration < self.iteration_max:
+                
+                tq = tqdm(self.dataloader_train)
+                tq.set_description(f'Iteration {iteration} / {iteration_max}')
+                self.network.train()
+                optimizer.zero_grad()
+                grey,color = next(tq).to(self.device)
+                t = torch.randint(0, self.num_timesteps, (self.batch_size,), device=device).long()
+                noisy_image,noise_ref = self.diffusion.noisy_image(t,color)
+                noise_pred = self.diffusion.noise_prediction(self.network,noisy_image,grey,t)
+                loss = self.loss(noise_ref,denoised_image)
+                loss.backward()
+                optimizer.step()
+                tq.set_postfix(loss = loss.item()*self.batch_size)
+                iteration+=1
 
-                    if iteration%self.ema_every == 0 and iteration>self.start_ema:
-                        print('EMA update')
-                        self.EMA.update_model_average(self.ema_model,self.network)
-                    
-                    if iteration%self.save_model_every == 0:
-                        print('Saving models')
-                        self.save_model(f'model_{iteration}.pth')
-                        self.save_model(f'model_ema_{iteration}.pth',EMA=True)
+                if iteration%self.ema_every == 0 and iteration>self.start_ema:
+                    print('EMA update')
+                    self.EMA.update_model_average(self.ema_model,self.network)
+                
+                if iteration%self.save_model_every == 0:
+                    print('Saving models')
+                    self.save_model(f'model_{iteration}.pth')
+                    self.save_model(f'model_ema_{iteration}.pth',EMA=True)
 
-                    if iteration%self.validation_every == 0:
-                        tq = tqdm(dataloader_validation)
-                        with torch.no_grad():
-                            self.network.eval()
-                            for (gray,color) in enumerate(tq):
-                                tq.set_description(f'Iteration {iteration} / {iteration_max}')
-                                gray = gray.to(self.device)
-                                T = 1000
-                                alphas = np.linspace(1e-4,0.09,T)
-                                gammas = np.cumprod(alphas,axis=0)
-                                y = torch.randn_like(color).to(self.device)
-                                for t in range(T):
-                                    if t == 0 :
-                                        z = torch.randn_like(color).to(self.device)
-                                    else:
-                                        z = torch.zeros_like(color).to(self.device)
-                                    y = extract(to_torch(np.sqrt(1/alphas)),t,y.shape)*(y-(extract(to_torch((1-alphas)/np.sqrt(1-gammas)),t,y.shape))*self.network(y,gray,t)) + extract(np.sqrt(1-alphas),t,z.shape)*z
-                                    y_ema = extract(to_torch(np.sqrt(1/alphas)),t,y.shape)*(y-(extract(to_torch((1-alphas)/np.sqrt(1-gammas)),t,y.shape))*self.ema_model(y,gray,t)) + extract(np.sqrt(1-alphas),t,z.shape)*z
-                                loss = self.loss(color,y)
-                                loss_ema = self.loss(color,y_ema)
-                                tq.set_postfix(loss = loss.item())
+                if iteration%self.validation_every == 0:
+                    tq = tqdm(dataloader_validation)
+                    with torch.no_grad():
+                        self.network.eval()
+                        for (gray,color) in enumerate(tq):
+                            tq.set_description(f'Iteration {iteration} / {iteration_max}')
+                            gray = gray.to(self.device)
+                            T = 1000
+                            alphas = np.linspace(1e-4,0.09,T)
+                            gammas = np.cumprod(alphas,axis=0)
+                            y = torch.randn_like(color).to(self.device)
+                            for t in range(T):
+                                if t == 0 :
+                                    z = torch.randn_like(color).to(self.device)
+                                else:
+                                    z = torch.zeros_like(color).to(self.device)
+                                y = extract(to_torch(np.sqrt(1/alphas)),t,y.shape)*(y-(extract(to_torch((1-alphas)/np.sqrt(1-gammas)),t,y.shape))*self.network(y,gray,t)) + extract(np.sqrt(1-alphas),t,z.shape)*z
+                                y_ema = extract(to_torch(np.sqrt(1/alphas)),t,y.shape)*(y-(extract(to_torch((1-alphas)/np.sqrt(1-gammas)),t,y.shape))*self.ema_model(y,gray,t)) + extract(np.sqrt(1-alphas),t,z.shape)*z
+                            loss = self.loss(color,y)
+                            loss_ema = self.loss(color,y_ema)
+                            tq.set_postfix(loss = loss.item())
                     
 
             
