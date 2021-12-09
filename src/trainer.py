@@ -90,7 +90,7 @@ class Trainer():
                     t = torch.randint(0, self.num_timesteps, (self.batch_size,)).long()
                     noisy_image,noise_ref = self.diffusion.noisy_image(t,color)
                     noise_pred = self.diffusion.noise_prediction(self.network,noisy_image.to(self.device),grey.to(self.device),t.to(self.device))
-                    loss = self.loss(noise_ref,denoised_image)
+                    loss = self.loss(noise_ref.to(self.device),noise_pred)
                     loss.backward()
                     optimizer.step()
                     tq.set_postfix(loss = loss.item()*self.batch_size)

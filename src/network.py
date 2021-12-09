@@ -4,6 +4,7 @@ import math
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class GroupNorm32(nn.GroupNorm):
     def forward(self, x):
