@@ -42,7 +42,7 @@ class GaussianDiffusion(nn.Module):
         ''' Compute y_noisy according to (6) p15 of [2]'''
         noise = torch.randn_like(y)
         y_noisy = extract(self.gammas,t,y.shape)*y + extract(self.sqrt_one_minus_gammas,t,noise.shape)*noise
-        return y_noisy, noise_in
+        return y_noisy, noise
         
     def noise_prediction(self,denoise_fn,y_noisy,x,t):
         ''' Use the NN to predict the noise added between y_{t-1} and y_t'''

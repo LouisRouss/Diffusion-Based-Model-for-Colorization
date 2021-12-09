@@ -1,5 +1,6 @@
 import os
 from abc import abstractmethod
+import math
 
 import torch
 import torch.nn as nn
@@ -50,15 +51,14 @@ def timestep_embedding(timesteps, dim, max_period=10000):
     :return: an [N x dim] Tensor of positional embeddings.
     """
     half = dim // 2
-    freqs = th.exp(
-        -math.log(max_period) * th.arange(start=0, end=half, dtype=th.float32) / half
+    freqs = torch.exp(
+        -math.log(max_period) * torch.arange(start=0, end=half, dtype=torch.float32) / half
     ).to(device=timesteps.device)
     args = timesteps[:, None].float() * freqs[None]
-    embedding = th.cat([th.cos(args), th.sin(args)], dim=-1)
+    embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
     if dim % 2:
-        embedding = th.cat([embedding, th.zeros_like(embedding[:, :1])], dim=-1)
+        embedding = torch.cat([embedding, torch.zeros_like(embedding[:, :1])], dim=-1)
     return embedding
-
 
 
 class CheckpointFunction(torch.autograd.Function):
@@ -377,7 +377,7 @@ class QKVAttentionLegacy(nn.Module):
         assert width % (3 * self.n_heads) == 0
         ch = width // (3 * self.n_heads)
         q, k, v = qkv.reshape(bs * self.n_heads, ch * 3, length).split(ch, dim=1)
-        scale = 1 / matorch.sqrt(matorch.sqrt(ch))
+        scale = 1 / math.sqrt(math.sqrt(ch))
         weight = torch.einsum(
             "bct,bcs->bts", q * scale, k * scale
         )  # More stable with f16 than dividing afterwards
@@ -409,7 +409,7 @@ class QKVAttention(nn.Module):
         assert width % (3 * self.n_heads) == 0
         ch = width // (3 * self.n_heads)
         q, k, v = qkv.chunk(3, dim=1)
-        scale = 1 / matorch.sqrt(matorch.sqrt(ch))
+        scale = 1 / math.sqrt(math.sqrt(ch))
         weight = torch.einsum(
             "bct,bcs->bts",
             (q * scale).view(bs * self.n_heads, ch, length),
@@ -629,22 +629,6 @@ class UNetModel(nn.Module):
             zero_module(nn.Conv2d(input_ch, out_channels, 3, padding=1)),
         )
 
-    def convert_to_fp16(self):
-        """
-        Convert the torso of the model to float16.
-        """
-        self.input_blocks.apply(convert_module_to_f16)
-        self.middle_block.apply(convert_module_to_f16)
-        self.output_blocks.apply(convert_module_to_f16)
-
-    def convert_to_fp32(self):
-        """
-        Convert the torso of the model to float32.
-        """
-        self.input_blocks.apply(convert_module_to_f32)
-        self.middle_block.apply(convert_module_to_f32)
-        self.output_blocks.apply(convert_module_to_f32)
-
     def forward(self,y, x, timesteps):
         """
         Apply the model to an input batch.
@@ -659,7 +643,7 @@ class UNetModel(nn.Module):
         hs = []
         emb = self.time_embed(timestep_embedding(timesteps, self.model_channels))
 
-        h = z.type(self.dtype)
+        h = z.type(torch.float32)
         for module in self.input_blocks:
             h = module(h, emb)
             hs.append(h)
