@@ -11,4 +11,4 @@ Diffusion Models Beat GANs on Image Synthesis https://arxiv.org/pdf/2105.05233.p
 
 The Unet Network script directly comes from the repo of this last : https://github.com/openai/guided-diffusion (with small modifications according to the Palette paper)
 
-A colorization Dataset : https://www.kaggle.com/shravankumar9892/image-colorization ( Palette paper use ImageNet )
+A colorization Dataset : https://www.kaggle.com/shravankumar9892/image-colorization ( Palette paper's researchers uses ImageNet )
