@@ -47,8 +47,9 @@ class Trainer():
         dataset_train = gray_color_data(self.path_train_color,self.path_train_grey)  
         dataset_validation = gray_color_data(self.path_validation_color,self.path_validation_grey)
         self.batch_size = config.BATCH_SIZE
+        self.batch_size_val = config.BATCH_SIZE_VAL
         self.dataloader_train = DataLoader(dataset_train,batch_size=self.batch_size, shuffle=True)
-        self.dataloader_validation = DataLoader(dataset_validation,batch_size=1,shuffle=False)
+        self.dataloader_validation = DataLoader(dataset_validation,batch_size=self.batch_size_val,shuffle=False)
         self.iteration_max = config.ITERATION_MAX
         self.EMA = EMA(0.9999)
         self.LR = config.LR
@@ -73,6 +74,7 @@ class Trainer():
 
     def train(self):
 
+            to_torch = partial(torch.tensor, dtype=torch.float32)
             optimizer = optim.Adam(self.network.parameters(),lr=self.LR)
             iteration = 0
             
@@ -103,26 +105,30 @@ class Trainer():
 
                     if iteration%self.save_model_every == 0:
                         print('Saving models')
-                        self.save_model(f'model_{iteration}.pth')
-                        self.save_model(f'model_ema_{iteration}.pth',EMA=True)
+                        if not os.path.exists('models/'):
+                            os.makedirs('models')
+                        self.save_model(f'models/model_{iteration}.pth')
+                        self.save_model(f'models/model_ema_{iteration}.pth',EMA=True)
 
                     if iteration%self.validation_every == 0:
                         tq_val = tqdm(self.dataloader_validation)
                         with torch.no_grad():
                             self.network.eval()
                             for grey,color in tq_val:
-                                tq.set_description(f'Iteration {iteration} / {iteration_max}')
+                                tq.set_description(f'Iteration {iteration} / {self.iteration_max}')
                                 T = 1000
                                 alphas = np.linspace(1e-4,0.09,T)
                                 gammas = np.cumprod(alphas,axis=0)
-                                y = torch.randn_like(color).to(self.device)
+                                y = torch.randn_like(color)
                                 for t in range(T):
                                     if t == 0 :
-                                        z = torch.randn_like(color).to(self.device)
+                                        z = torch.randn_like(color)
                                     else:
-                                        z = torch.zeros_like(color).to(self.device)
-                                    y = extract(to_torch(np.sqrt(1/alphas)),t,y.shape)*(y-(extract(to_torch((1-alphas)/np.sqrt(1-gammas)),t,y.shape))*self.network(y.to(self.device),grey.to(self.device),t.to(self.device))) + extract(np.sqrt(1-alphas),t,z.shape)*z
-                                    y_ema = extract(to_torch(np.sqrt(1/alphas)),t,y.shape)*(y-(extract(to_torch((1-alphas)/np.sqrt(1-gammas)),t,y.shape))*self.ema_model(y.to(self.device),grey.to(self.device),t.to(self.device))) + extract(np.sqrt(1-alphas),t,z.shape)*z
+                                        z = torch.zeros_like(color)
+
+                                    time = (torch.ones((self.batch_size_val,)) * t).long()
+                                    y = extract(to_torch(np.sqrt(1/alphas)),time,y.shape)*(y-(extract(to_torch((1-alphas)/np.sqrt(1-gammas)),time,y.shape))*self.network(y.to(self.device),grey.to(self.device),time.to(self.device)).detach().cpu()) + extract(to_torch(np.sqrt(1-alphas)),t,z.shape)*z
+                                    y_ema = extract(to_torch(np.sqrt(1/alphas)),time,y.shape)*(y-(extract(to_torch((1-alphas)/np.sqrt(1-gammas)),time,y.shape))*self.ema_model(y.to(self.device),grey.to(self.device),time.to(self.device)).detach().cpu()) + extract(to_torch(np.sqrt(1-alphas)),t,z.shape)*z
                                 loss = self.loss(color,y)
                                 loss_ema = self.loss(color,y_ema)
                                 tq.set_postfix(loss = loss.item())

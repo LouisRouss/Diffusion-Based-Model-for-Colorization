@@ -29,7 +29,7 @@ class GaussianDiffusion(nn.Module):
         self.timesteps = timesteps
     
         alphas = np.linspace(1e-6,0.01,timesteps)
-        gammas = np.cumprod(alphas,axis=0)  # Pas sur si 1-alphas ou 1-alpha
+        gammas = np.cumprod(alphas,axis=0)
         
         to_torch = partial(torch.tensor, dtype=torch.float32)
         
