@@ -68,9 +68,9 @@ class Trainer():
 
     def save_model(self,name,EMA=False):
         if not EMA:
-            torch.save(self.network.state_dict(),f'models/{name}')
+            torch.save(self.network.state_dict(),name)
         else:
-            torch.save(self.ema_model.state_dict(),f'models/{name}')
+            torch.save(self.ema_model.state_dict(),name)
 
     def train(self):
 
