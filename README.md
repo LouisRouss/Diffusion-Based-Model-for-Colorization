@@ -1,8 +1,15 @@
-# WORK IN PROGRESS ( Not any trained model available yet / Code still in progress )
+# WORK IN PROGRESS ( Not any trained model available yet / Training in progress )
 
 
 # About this project 
 This is a first implementation of a Colorization Diffusion Based Method
+
+# How to train the model
+Modify the conf.yml file, set the 'mode' option to 1. Then run the main.py file specifying the path to the config file  (absolute or relative)
+Example : python main.py --config conf.yml
+
+# Future of this repo
+I'm currently training the model with a shallower network than the Palette paper and a smaller batch size, according to my little computation power. Any insight/remark is welcome ! 
 
 # Reference
 Palette Image_to_Image Diffusion Models https://arxiv.org/pdf/2111.05826v1.pdf
