@@ -95,7 +95,7 @@ class Trainer():
                     loss = self.loss(noise_ref.to(self.device),noise_pred)
                     loss.backward()
                     optimizer.step()
-                    tq.set_postfix(loss = loss.item()*self.batch_size)
+                    tq.set_postfix(loss = loss.item())
                     
                     iteration+=1
 
@@ -131,7 +131,7 @@ class Trainer():
                                     y_ema = extract(to_torch(np.sqrt(1/alphas)),time,y.shape)*(y-(extract(to_torch((1-alphas)/np.sqrt(1-gammas)),time,y.shape))*self.ema_model(y.to(self.device),grey.to(self.device),time.to(self.device)).detach().cpu()) + extract(to_torch(np.sqrt(1-alphas)),t,z.shape)*z
                                 loss = self.loss(color,y)
                                 loss_ema = self.loss(color,y_ema)
-                                tq.set_postfix(loss = loss.item())
+                                tq.set_postfix({'loss' : loss.item(),'loss ema':loss_ema.item()})
                     
 
             
