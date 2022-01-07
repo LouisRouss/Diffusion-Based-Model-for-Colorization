@@ -10,6 +10,8 @@ Example : python main.py --config conf.yml
 
 # Future of this repo
 I'm currently training the model with a shallower network than the Palette paper and a smaller batch size, according to my little computation power. Any insight/remark is welcome ! 
+The test mode isnt implemented yet
+For the validation loop in the training loop, necessity to use/find a more suitable/ an additional metric
 
 # Reference
 Palette Image_to_Image Diffusion Models https://arxiv.org/pdf/2111.05826v1.pdf
