@@ -9,11 +9,8 @@ Modify the conf.yml file, set the 'mode' option to 1. Then run the main.py file 
 Example : python main.py --config conf.yml
 
 # Future of this repo
-I'm currently training the model with a shallower network than the Palette paper and a smaller batch size, according to my little computation power. Any insight/remark is welcome ! 
-
-
-The test mode isnt implemented yet
-
+I have impossibility to train and to test the model implemented due to my lack of computational power.
+There might be some mistakes in the code, any insight and remark is welcomed
 
 For the validation loop in the training loop, necessity to use/find a more suitable/ an additional metric
 
