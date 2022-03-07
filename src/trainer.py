@@ -1,4 +1,5 @@
 import os
+from functools import partial
 
 from .network import UNetModel,EMA
 from .dataloader import gray_color_data
@@ -65,7 +66,6 @@ class Trainer():
         self.start_ema = config.START_EMA
         self.save_model_every = config.SAVE_MODEL_EVERY
         self.ema_model = copy.deepcopy(self.network).to(self.device)
-
     def save_model(self,name,EMA=False):
         if not EMA:
             torch.save(self.network.state_dict(),name)
@@ -115,7 +115,7 @@ class Trainer():
                         with torch.no_grad():
                             self.network.eval()
                             for grey,color in tq_val:
-                                tq.set_description(f'Iteration {iteration} / {self.iteration_max}')
+                                tq_val.set_description(f'Iteration {iteration} / {self.iteration_max}')
                                 T = 1000
                                 alphas = np.linspace(1e-4,0.09,T)
                                 gammas = np.cumprod(alphas,axis=0)
@@ -131,7 +131,7 @@ class Trainer():
                                     y_ema = extract(to_torch(np.sqrt(1/alphas)),time,y.shape)*(y-(extract(to_torch((1-alphas)/np.sqrt(1-gammas)),time,y.shape))*self.ema_model(y.to(self.device),grey.to(self.device),time.to(self.device)).detach().cpu()) + extract(to_torch(np.sqrt(1-alphas)),time,z.shape)*z
                                 loss = self.loss(color,y)
                                 loss_ema = self.loss(color,y_ema)
-                                tq.set_postfix({'loss' : loss.item(),'loss ema':loss_ema.item()})
+                                tq_val.set_postfix({'loss' : loss.item(),'loss ema':loss_ema.item()})
                     
 
             
