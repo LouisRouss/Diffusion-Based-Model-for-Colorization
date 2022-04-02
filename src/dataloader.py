@@ -17,7 +17,7 @@ class gray_color_data(Dataset):
     def __getitem__(self,idx):
         image_gray =  self.data_gray[idx]
         shape = (image_gray.shape[0],image_gray.shape[1],3)
-        image_color = np.zeros((224,224,3))
+        image_color = np.zeros(shape)
         image_color[:,:,0] = image_gray
         image_color[:,:,1:] = self.data_color[idx]
         image_color = image_color.astype('uint8')
