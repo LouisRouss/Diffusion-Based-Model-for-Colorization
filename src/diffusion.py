@@ -27,8 +27,9 @@ class GaussianDiffusion(nn.Module):
         self.channel_y = channel_y
         self.channel_x = channel_x
         self.timesteps = timesteps
-    
-        alphas = np.linspace(1e-6,0.01,timesteps)
+        
+        betas = np.linspace(1e-6,0.01,timesteps)
+        alphas = 1. - betas
         gammas = np.cumprod(alphas,axis=0)
         
         to_torch = partial(torch.tensor, dtype=torch.float32)
