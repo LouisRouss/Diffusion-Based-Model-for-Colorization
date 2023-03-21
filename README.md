@@ -2,7 +2,9 @@
 
 
 # About this project 
-This is a first implementation of a Colorization Diffusion Based Method
+This is a first implementation of a Colorization Diffusion Based Method.
+Beware, this implementation comports mistakes but i don't have the time to work on it right now. For a correct implementation ones can look at the following repo.
+https://github.com/Janspiry/Palette-Image-to-Image-Diffusion-Models
 
 # How to train the model
 Modify the conf.yml file, set the 'mode' option to 1. Then run the main.py file specifying the path to the config file  (absolute or relative)
